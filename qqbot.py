@@ -27,9 +27,9 @@ class CodingWrappedWriter:
     def flush(self):
         return self.writer.flush()
 
-# ÔÚ windows consoler ÏÂ£¬ ÔËĞĞ print "ÖĞÎÄ" »á³öÏÖÂÒÂë
-# ÇëÊ¹ÓÃ£º utf8_stdout.write("ÖĞÎÄ\n")
-# Ïàµ±ÓÚ£º sys.stdout.write("ÖĞÎÄ\n".decode('utf8').encode(sys.stdout.encoding))
+# åœ¨ windows consoler ä¸‹ï¼Œ è¿è¡Œ print "ä¸­æ–‡" ä¼šå‡ºç°ä¹±ç 
+# è¯·ä½¿ç”¨ï¼š utf8_stdout.write("ä¸­æ–‡\n")
+# ç›¸å½“äºï¼š sys.stdout.write("ä¸­æ–‡\n".decode('utf8').encode(sys.stdout.encoding))
 if codingEqual('utf8', sys.stdout.encoding):
     utf8_stdout = sys.stdout
 else:
@@ -60,19 +60,19 @@ class QQBot:
             qqNum = int(sys.argv[1])
 
         if qqNum is None:
-            QLogger('µÇÂ¼·½Ê½£ºÊÖ¶¯µÇÂ¼')
+            QLogger('ç™»å½•æ–¹å¼ï¼šæ‰‹åŠ¨ç™»å½•')
             self.manualLogin()
         else:
             try:
-                QLogger('µÇÂ¼·½Ê½£º×Ô¶¯µÇÂ¼')
+                QLogger('ç™»å½•æ–¹å¼ï¼šè‡ªåŠ¨ç™»å½•')
                 self.autoLogin(qqNum)
             except Exception as e:
                 if not isinstance(e, RequestError):
                     QLogger('', exc_info=True)
-                QLogger('×Ô¶¯µÇÂ¼Ê§°Ü£¬¸ÄÓÃÊÖ¶¯µÇÂ¼')
+                QLogger('è‡ªåŠ¨ç™»å½•å¤±è´¥ï¼Œæ”¹ç”¨æ‰‹åŠ¨ç™»å½•')
                 self.manualLogin()
 
-        QLogger('µÇÂ¼³É¹¦¡£µÇÂ¼ÕËºÅ£º%s (%d)' % (self.nick, self.qqNum))
+        QLogger('ç™»å½•æˆåŠŸã€‚ç™»å½•è´¦å·ï¼š%s (%d)' % (self.nick, self.qqNum))
 
     def manualLogin(self):
         self.prepareLogin()
@@ -98,16 +98,16 @@ class QQBot:
                 pickle.dump(self.__dict__, f)
         except:
             QLogger('', exc_info=True)
-            QLogger('±£´æµÇÂ¼ Session info Ê§°Ü')
+            QLogger('ä¿å­˜ç™»å½• Session info å¤±è´¥')
         else:
-            QLogger('µÇÂ¼ĞÅÏ¢ÒÑ±£')
+            QLogger('ç™»å½•ä¿¡æ¯å·²ä¿')
         self.pollSession = pickle.loads(pickle.dumps(self.session))
 
     def loadSessionInfo(self, qqNum):
         picklePath = os.path.join(TmpDir, '%s-%d.pickle' % (QQBotVersion[:-2], qqNum))
         with open(picklePath, 'rb') as f:
             self.__dict__ = pickle.load(f)
-            QLogger('³É¹¦´ÓÎÄ¼ş file://%s ÖĞ»Ö¸´µÇÂ¼ĞÅÏ¢' % picklePath)
+            QLogger('æˆåŠŸä»æ–‡ä»¶ file://%s ä¸­æ¢å¤ç™»å½•ä¿¡æ¯' % picklePath)
         self.pollSession = pickle.loads(pickle.dumps(self.session))
 
     def prepareLogin(self):
@@ -144,7 +144,7 @@ class QQBot:
         ).text
     
     def getQrcode(self):
-        QLogger(' »ñÈ¡¶şÎ¬Âë')
+        QLogger(' è·å–äºŒç»´ç ')
         if not hasattr(self, 'qrcodePath'):
             self.qrcodePath = 'qrcode.png'
         qrcode = self.urlGet(
@@ -160,18 +160,18 @@ class QQBot:
         while True:
             time.sleep(3)
             authStatus = self.getAuthStatus()
-            if '¶şÎ¬ÂëÎ´Ê§Ğ§' in authStatus:
-                QLogger('¶şÎ¬ÂëÎ´Ê§Ğ§,µÈ´ıÉ¨Ãè')
-            elif '¶şÎ¬ÂëÈÏÖ¤ÖĞ' in authStatus:
-                # "ptuiCB('67','0','','0','¶şÎ¬ÂëÈÏÖ¤ÖĞ¡£(1006641921)', '');\r\n"
-                QLogger('¶şÎ¬ÂëÒÑÉ¨Ãè£¬µÈ´ıÊÚÈ¨')
-            elif '¶şÎ¬ÂëÒÑÊ§Ğ§' in authStatus:
-                # "ptuiCB('65','0','','0','¶şÎ¬ÂëÒÑÊ§Ğ§¡£(4171256442)', '');\r\n"
-                QLogger('¶şÎ¬ÂëÒÑÊ§Ğ§, ÖØĞÂ»ñÈ¡¶şÎ¬Âë')
+            if 'äºŒç»´ç æœªå¤±æ•ˆ' in authStatus:
+                QLogger('äºŒç»´ç æœªå¤±æ•ˆ,ç­‰å¾…æ‰«æ')
+            elif 'äºŒç»´ç è®¤è¯ä¸­' in authStatus:
+                # "ptuiCB('67','0','','0','äºŒç»´ç è®¤è¯ä¸­ã€‚(1006641921)', '');\r\n"
+                QLogger('äºŒç»´ç å·²æ‰«æï¼Œç­‰å¾…æˆæƒ')
+            elif 'äºŒç»´ç å·²å¤±æ•ˆ' in authStatus:
+                # "ptuiCB('65','0','','0','äºŒç»´ç å·²å¤±æ•ˆã€‚(4171256442)', '');\r\n"
+                QLogger('äºŒç»´ç å·²å¤±æ•ˆ, é‡æ–°è·å–äºŒç»´ç ')
                 self.getQrcode()
-            elif 'µÇÂ¼³É¹¦' in authStatus:
-                # ptuiCB('0','0','http://ptlogin4.web2.qq.com/check_sig?...','0','µÇÂ¼³É¹¦£¡', 'nickname');\r\n"
-                QLogger('ÒÑ»ñÊÚÈ¨')
+            elif 'ç™»å½•æˆåŠŸ' in authStatus:
+                # ptuiCB('0','0','http://ptlogin4.web2.qq.com/check_sig?...','0','ç™»å½•æˆåŠŸï¼', 'nickname');\r\n"
+                QLogger('å·²è·æˆæƒ')
                 items = authStatus.split(',')
                 self.nick = items[-1].split("'")[1]
                 self.qqNum = int(self.session.cookies['superuin'][1:])
@@ -183,15 +183,15 @@ class QQBot:
                 delattr(self, 'qrcodePath')
                 break
             else:
-                raise Exception('»ñÈ¡¶şÎ¬ÂëÉ¨Ãè×´Ì¬Ê±³ö´í, html="%s"' % authStatus)
+                raise Exception('è·å–äºŒç»´ç æ‰«æçŠ¶æ€æ—¶å‡ºé”™, html="%s"' % authStatus)
     
     def getPtwebqq(self):
-        QLogger('»ñÈ¡ptwebqq')
+        QLogger('è·å–ptwebqq')
         self.urlGet(self.urlPtwebqq)
         self.ptwebqq = self.session.cookies['ptwebqq']
     
     def getVfwebqq(self):
-        QLogger('»ñÈ¡vfwebqq')
+        QLogger('è·å–vfwebqq')
         self.vfwebqq = self.smartRequest(
             url = 'http://s.web2.qq.com/api/getvfwebqq?ptwebqq=%s&clientid=%s&psessionid=&t=%s' % \
                   (self.ptwebqq, self.clientid, repr(random.random())),
@@ -200,7 +200,7 @@ class QQBot:
         )['vfwebqq']
     
     def getUinAndPsessionid(self):
-        QLogger('»ñÈ¡uinºÍpsessionid')
+        QLogger('è·å–uinå’Œpsessionid')
         result = self.smartRequest(
             url = 'http://d1.web2.qq.com/channel/login2',
             data = {
@@ -216,7 +216,7 @@ class QQBot:
         self.hash = qHash(self.uin, self.ptwebqq)
 
     def testLogin(self):
-        # ÇëÇóÒ»ÏÂ get_online_buddies Ò³Ãæ£¬ËÆºõ¿ÉÒÔ±ÜÃâ103´íÎó¡£ÈôÇëÇóÎŞ´íÎó·¢Éú£¬Ôò±íÃ÷µÇÂ¼³É¹¦
+        # è¯·æ±‚ä¸€ä¸‹ get_online_buddies é¡µé¢ï¼Œä¼¼ä¹å¯ä»¥é¿å…103é”™è¯¯ã€‚è‹¥è¯·æ±‚æ— é”™è¯¯å‘ç”Ÿï¼Œåˆ™è¡¨æ˜ç™»å½•æˆåŠŸ
         self.smartRequest(
             url = 'http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq=%s&clientid=%d&psessionid=%s&t=%s' % \
                   (self.vfwebqq, self.clientid, self.psessionid, repr(random.random())),
@@ -226,14 +226,13 @@ class QQBot:
         )
 
     def fetchBuddies(self):
-        QLogger('»ñÈ¡ºÃÓÑÁĞ±í')
+        QLogger('è·å–å¥½å‹åˆ—è¡¨')
         result = self.smartRequest(
             url = 'http://s.web2.qq.com/api/get_user_friends2',
             data = {'r': json.dumps({"vfwebqq":self.vfwebqq, "hash":self.hash})},
             Referer = 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
         )
         self.buddies = {}
-        self.buddiess = {}
 
         for info in result['info']:
             uin = info['uin']
@@ -245,10 +244,10 @@ class QQBot:
             )['account']
             self.buddies[uin] = [qq, name]
         QLogger(str(self.buddies))
-        QLogger('»ñÈ¡ÅóÓÑÁĞ±í³É¹¦£¬¹² %d ¸öÅóÓÑ' % len(self.buddies))
+        QLogger('è·å–æœ‹å‹åˆ—è¡¨æˆåŠŸï¼Œå…± %d ä¸ªæœ‹å‹' % len(self.buddies))
 
     def fetchGroups(self):
-        QLogger('»ñÈ¡ÈºÁĞ±í')
+        QLogger('è·å–ç¾¤åˆ—è¡¨')
         result = self.smartRequest(
             url = 'http://s.web2.qq.com/api/get_group_name_list_mask2',
             data = {'r': json.dumps({"vfwebqq":self.vfwebqq, "hash":self.hash})},
@@ -257,11 +256,11 @@ class QQBot:
         ss, self.groups, self.groupsDictU, self.groupsDictQ = [], [], {}, {}
         res = result['gnamelist']
         self.groups = {i['gid']: i['name'] for i in res}
-        self.groupStr = 'ÈºÁĞ±í:\n' + str(self.groups)
-        QLogger('»ñÈ¡ÈºÁĞ±í³É¹¦£¬¹² %d ¸öÅóÓÑ' % len(self.groups))
+        self.groupStr = 'ç¾¤åˆ—è¡¨:\n' + str(self.groups)
+        QLogger('è·å–ç¾¤åˆ—è¡¨æˆåŠŸï¼Œå…± %d ä¸ªç¾¤' % len(self.groups))
 
     def fetchDiscusses(self):
-        QLogger('»ñÈ¡ÌÖÂÛ×éÁĞ±í')
+        QLogger('è·å–è®¨è®ºç»„åˆ—è¡¨')
         result = self.smartRequest(
             url = 'http://s.web2.qq.com/api/get_discus_list?clientid=%s&psessionid=%s&vfwebqq=%s&t=%s' % \
                   (self.clientid, self.psessionid, self.vfwebqq, repr(random.random())),
@@ -276,14 +275,14 @@ class QQBot:
             self.discussesDict[uin] = discuss
             s = '%s, uin%d' % (name, uin)
             ss.append(s)
-            QLogger('ÌÖÂÛ×é£º ' + s)
-        self.discussStr = 'ÌÖÂÛ×éÁĞ±í:\n' + '\n'.join(ss)
-        QLogger('»ñÈ¡ÌÖÂÛ×éÁĞ±í³É¹¦£¬¹² %d ¸öÌÖÂÛ×é' % len(self.discusses))
+            QLogger('è®¨è®ºç»„ï¼š ' + s)
+        self.discussStr = 'è®¨è®ºç»„åˆ—è¡¨:\n' + '\n'.join(ss)
+        QLogger('è·å–è®¨è®ºç»„ï¼Œå…± %d ä¸ª' % len(self.discusses))
     
     def refetch(self):
-        #self.fetchBuddies()
+        self.fetchBuddies()
         self.fetchGroups()
-        self.fetchDiscusses()
+        #self.fetchDiscusses()
         self.nick = self.fetchBuddyDetailInfo(self.uin)['nick']
     
     def fetchBuddyDetailInfo(self, uin):
@@ -306,67 +305,64 @@ class QQBot:
             Referer = 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
         )
         if 'errmsg' in result:
-            pollResult = ('', 0, 0, '')  # ÎŞÏûÏ¢
+            return None
         else:
             result = result[0]
             msgType = {'message':'buddy', 'group_message':'group', 'discu_message':'discuss'}[result['poll_type']]
             from_uin = result['value']['from_uin']
             buddy_uin = result['value'].get('send_uin', from_uin)
-            msg = ''.join(
-                [m for m in result['value']['content'][1:]]
-            )
-            pollResult = msgType, from_uin, buddy_uin, msg
+
+            msg = ''.join([str(m) for m in result['value']['content'][1:]])
+            try:
+                face = result['value']['content'][2][2]
+            except :
+                face=0
+            pollResult = msgType, from_uin, buddy_uin, msg, face
             if msgType == 'buddy':
                 try:
                     name =self.buddies[from_uin]
-                except:
-                    name = "Î´Öªqq"
-                print('À´×Ô %s(%s) µÄÏûÏ¢: "%s"' % (name[1], name[0], msg))
+                except IndexError as error:
+                    name = "æœªçŸ¥qq"
+                print('æ¥è‡ª %s(%s) çš„æ¶ˆæ¯: "%s"' % (name[1], name[0], msg))
             else:
-                print('À´×ÔÈº: %s (%d) µÄÏûÏ¢: %s ' % (self.groups[pollResult[1]], pollResult[2], pollResult[3]))
+                print('æ¥è‡ªç¾¤: %s (%d) çš„æ¶ˆæ¯: %s ' % (self.groups[pollResult[1]], pollResult[2], pollResult[3]))
+                return None
         return pollResult
     
-    def send(self, msgType, to_uin, msg):
+    def send(self, msgType, to_uin, msg, face):
         while msg:
             front, msg = utf8Partition(msg, 600)
-            self._send(msgType, to_uin, front)
+            self._send(msgType, to_uin, front, face)
 
-    def _send(self, msgType, to_uin, msg):
+    def _send(self, msgType, to_uin, msg, face):
         self.msgId += 1        
         if self.msgId % 10 == 0:
-            QLogger('ÒÑÁ¬Ğø·¢ËÍ10ÌõÏûÏ¢£¬Ç¿ÖÆ sleep 10Ãë£¬ÇëµÈ´ı...')
+            QLogger('å·²è¿ç»­å‘é€10æ¡æ¶ˆæ¯æš‚åœ5ç§’ï¼Œè¯·ç­‰å¾…...')
             time.sleep(10)
         else:
-            time.sleep(random.randint(3,5))
+            time.sleep(random.randint(3, 5))
         sendUrl = {
             'buddy': 'http://d1.web2.qq.com/channel/send_buddy_msg2',
             'group': 'http://d1.web2.qq.com/channel/send_qun_msg2',
             'discuss': 'http://d1.web2.qq.com/channel/send_discu_msg2'
         }
-        sendTag = {"buddy":"to", "group":"group_uin", "discuss":"did"}
-        self.smartRequest(
-            url = sendUrl[msgType], 
-            data = {
-                'r': json.dumps({
+        sendTag = {"buddy": "to", "group": "group_uin", "discuss": "did"}
+        if msgType != 'group':
+            self.smartRequest(
+                url=sendUrl[msgType],
+                data={
+                    'r': json.dumps({
                     sendTag[msgType]: to_uin,
-                    "content": json.dumps([
-                        msg,
-                        ["font", {"name": "ËÎÌå", "size": 10, "style": [0,0,0], "color": "000000"}]
-                    ]),
-                    "face": 522,
-                    "clientid": self.clientid,
+                    "content":
+                        json.dumps([msg, ["font", {"name": "å®‹ä½“", "size": 10, "style": [0, 0, 0], "color": "000000"}]]),
+                        "face":face,
+                        "clientid": self.clientid,
                     "msg_id": self.msgId,
-                    "psessionid": self.psessionid
-                })
-            },
-            Referer = 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
-        )
-        try:
-            name =self.buddies[to_uin]
-        except :
-            name ='Î´Öªqq'
-            return None
-        print('Ïò%s(%s) »Ø¸´ÏûÏ¢³É¹¦' % (name[1], name[0]))
+                    "psessionid": self.psessionid})
+                },
+            Referer='http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
+            )
+
 
     def urlGet(self, url, **kw):
         time.sleep(0.2)
@@ -388,22 +384,22 @@ class QQBot:
                 result = json.loads(html)
             except (requests.ConnectionError, ValueError):
                 i += 1
-                errorInfo = 'ÍøÂç´íÎó»òurlµØÖ·´íÎó'
+                errorInfo = 'ç½‘ç»œé”™è¯¯æˆ–urlåœ°å€é”™è¯¯'
             else:
                 retcode = result.get('retcode', result.get('errCode', -1))
                 if retcode in (0, 1202, 100003):
                     return result.get('result', result)
                 else:
                     j += 1
-                    errorInfo = 'ÇëÇó±»¾Ü¾ø´íÎó'
-            errMsg = 'µÚ%d´ÎÇëÇó¡°%s¡±Ê±³öÏÖ¡°%s¡±£¬html=%s' % (i+j, url, errorInfo, html)
+                    errorInfo = 'è¯·æ±‚è¢«æ‹’ç»é”™è¯¯'
+            errMsg = 'ç¬¬%dæ¬¡è¯·æ±‚â€œ%sâ€æ—¶å‡ºç°â€œ%sâ€ï¼Œhtml=%s' % (i+j, url, errorInfo, html)
 
-            # ³öÏÖÍøÂç´íÎó¿ÉÒÔ¶àÊÔ¼¸´Î£»ÈôÍøÂçÃ»ÎÊÌâ£¬µ« retcode ÓĞÎó£¬Ò»°ãÁ¬Ğø 3 ´Î¶¼³ö´í¾ÍÃ»±ØÒªÔÙÊÔÁË
+            # å‡ºç°ç½‘ç»œé”™è¯¯å¯ä»¥å¤šè¯•å‡ æ¬¡ï¼›è‹¥ç½‘ç»œæ²¡é—®é¢˜ï¼Œä½† retcode æœ‰è¯¯ï¼Œä¸€èˆ¬è¿ç»­ 3 æ¬¡éƒ½å‡ºé”™å°±æ²¡å¿…è¦å†è¯•äº†
             if i <= 5 and j <= repeatOnDeny:
-                QLogger(errMsg + '£¡µÈ´ıÖØÊÔ¡£')
+                QLogger(errMsg + 'ï¼ç­‰å¾…é‡è¯•ã€‚')
                 time.sleep(3)
             else:
-                QLogger(errMsg + '£¡Í£Ö¹ÖØÊÔ')
+                QLogger(errMsg + 'ï¼åœæ­¢é‡è¯•')
                 raise RequestError
 
     def Run(self):
@@ -414,24 +410,26 @@ class QQBot:
         pullThread.setDaemon(True)
         pullThread.start()
         
-        while not self.stopped:
+        while True:
             try:
                 pullResult = self.msgQueue.get()
                 if pullResult is None:
-                    break
+                    continue
                 self.onPollComplete(*pullResult)
             except KeyboardInterrupt:
                 self.stopped = True
-            except RequestError:
-                QLogger('Ïò QQ ·şÎñÆ÷ÇëÇóÊı¾İÊ±³ö´í')
                 break
-            except:
-                QLogger('³öÏÖÎ´Öª´íÎó£¬ÒÑºöÂÔ')
+            except RequestError:
+                QLogger('å‘ QQ æœåŠ¡å™¨è¯·æ±‚æ•°æ®æ—¶å‡ºé”™')
+                continue
+            except TypeError as error:
+                QLogger(error)
+                continue
         
         if self.stopped:
-            QLogger("QQBotÕı³£ÍË³ö")
+            QLogger("QQBotæ­£å¸¸é€€å‡º")
         else:
-            QLogger('QQBotÒì³£ÍË³ö')
+            QLogger('QQBotå¼‚å¸¸é€€å‡º')
 
     def pullForever(self):
         while not self.stopped:
@@ -442,19 +440,24 @@ class QQBot:
                 self.stopped = True
                 self.msgQueue.put(None)
             except RequestError:
-                QLogger('Ïò QQ ·şÎñÆ÷ÇëÇóÊı¾İÊ±³ö´í')
+                QLogger('å‘ QQ æœåŠ¡å™¨è¯·æ±‚æ•°æ®æ—¶å‡ºé”™')
                 self.msgQueue.put(None)
                 break
-            except:
-                QLogger('', exc_info=True)
-                QLogger(' poll ·½·¨³ö´í£¬ÒÑºöÂÔ')
 
-    # overload this method to build your own QQ-bot.    
-    def onPollComplete(self, msgType, from_uin, buddy_uin, message):
+    def onPollComplete(self, msgType, from_uin, buddy_uin, message, face):
+        from roboot import getMsg
         if message:
-            self.send(msgType, from_uin, message)
-
-# $filename must be an utf8 string
+            msg = getMsg(message)
+            self.send(msgType, from_uin, msg, face)
+        try:
+            name =self.buddies[from_uin]
+        except IndexError as error:
+            return
+        except TypeError as error:
+            return
+        except KeyError as error:
+            return
+        print('å‘%s(%s) å›å¤æ¶ˆæ¯(%s)æˆåŠŸ' % (name[1], name[0], msg))
 
 def qHash(x, K):
     N = [0] * 4
@@ -485,7 +488,6 @@ def utf8Partition(msg, n):
     if n >= len(msg):
         return msg, ''
     else:
-        # All utf8 characters start with '0xxx-xxxx' or '11xx-xxxx'
         while n > 0 and ord(msg[n]) >> 6 == 2:
             n -= 1
         return msg[:n], msg[n:]
@@ -494,7 +496,7 @@ def show_qr(path):
     try:
         from PIL import ImageTk, Image
     except ImportError:
-        raise SystemError('È±ÉÙPILÄ£¿é, ¿ÉÊ¹ÓÃsudo pip install PIL³¢ÊÔ°²×°')
+        raise SystemError('ç¼ºå°‘PILæ¨¡å—, å¯ä½¿ç”¨sudo pip install PILå°è¯•å®‰è£…')
     root = Tk()
     img = ImageTk.PhotoImage(
 		Image.open(path)
