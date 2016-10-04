@@ -10,6 +10,7 @@ QQBotVersion = "QQBot-v1.8.2"
 
 import json, os, logging, pickle, sys, time, random, platform, subprocess
 import requests, queue, threading
+import config
 
 # 'utf8', 'UTF8', 'utf-8', 'utf_8', None are all represent the same encoding
 def codingEqual(coding1, coding2):
@@ -36,36 +37,23 @@ else:
     utf8_stdout = CodingWrappedWriter('utf8', sys.stdout)
 
 def QLogger(msg):
-    print(str(msg))
-
-
-
-try:
-    TmpDir = os.path.join(os.path.expanduser('~'), '.qqbot-tmp')
-    if not os.path.exists(TmpDir):
-        os.mkdir(TmpDir)
-    tmpfile = os.path.join(TmpDir, 'tmptest%f' % random.random())
-    with open(tmpfile, 'w') as f:
-        f.write('test')
-    os.remove(tmpfile)
-except:
-    TmpDir = os.getcwd()
+    try:
+        print(str(msg).encode('gbk').decode('gbk','ignore'))
+    except UnicodeEncodeError as error:
+        pass
 
 class RequestError(Exception):
     pass
 
 class QQBot:
-    def Login(self, qqNum=None):
-        if qqNum is None and len(sys.argv) == 2 and sys.argv[1].isdigit():
-            qqNum = int(sys.argv[1])
-
-        if qqNum is None:
+    def Login(self):
+        if not os.path.exists('log.log'):
             QLogger('登录方式：手动登录')
             self.manualLogin()
         else:
             try:
                 QLogger('登录方式：自动登录')
-                self.autoLogin(qqNum)
+                self.autoLogin()
             except Exception as e:
                 if not isinstance(e, RequestError):
                     QLogger('', exc_info=True)
@@ -87,12 +75,12 @@ class QQBot:
         self.fetchDiscusses()
         self.dumpSessionInfo()
 
-    def autoLogin(self, qqNum):
-        self.loadSessionInfo(qqNum)
+    def autoLogin(self):
+        self.loadSessionInfo()
         self.testLogin()
 
     def dumpSessionInfo(self):
-        picklePath = os.path.join('log%d.log' %  self.qqNum)
+        picklePath = os.path.join('log.log')
         try:
             with open(picklePath, 'wb') as f:
                 pickle.dump(self.__dict__, f)
@@ -103,11 +91,11 @@ class QQBot:
             QLogger('登录信息已保')
         self.pollSession = pickle.loads(pickle.dumps(self.session))
 
-    def loadSessionInfo(self, qqNum):
-        picklePath = os.path.join(TmpDir, '%s-%d.pickle' % (QQBotVersion[:-2], qqNum))
+    def loadSessionInfo(self):
+        picklePath = 'log.log'
         with open(picklePath, 'rb') as f:
             self.__dict__ = pickle.load(f)
-            QLogger('成功从文件 file://%s 中恢复登录信息' % picklePath)
+            QLogger('成功从文件恢复登录')
         self.pollSession = pickle.loads(pickle.dumps(self.session))
 
     def prepareLogin(self):
@@ -321,12 +309,14 @@ class QQBot:
             if msgType == 'buddy':
                 try:
                     name =self.buddies[from_uin]
-                except IndexError as error:
+                except KeyError as error:
                     name = "未知qq"
                 print('来自 %s(%s) 的消息: "%s"' % (name[1], name[0], msg))
             else:
                 print('来自群: %s (%d) 的消息: %s ' % (self.groups[pollResult[1]], pollResult[2], pollResult[3]))
-                return None
+                if not self.groups[pollResult[1]] in config.groups:
+                    print('不在qq')
+                    return None
         return pollResult
     
     def send(self, msgType, to_uin, msg, face):
@@ -347,8 +337,7 @@ class QQBot:
             'discuss': 'http://d1.web2.qq.com/channel/send_discu_msg2'
         }
         sendTag = {"buddy": "to", "group": "group_uin", "discuss": "did"}
-        if msgType != 'group':
-            self.smartRequest(
+        self.smartRequest(
                 url=sendUrl[msgType],
                 data={
                     'r': json.dumps({
@@ -361,7 +350,7 @@ class QQBot:
                     "psessionid": self.psessionid})
                 },
             Referer='http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
-            )
+        )
 
 
     def urlGet(self, url, **kw):
