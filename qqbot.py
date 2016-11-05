@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 QQBot -- A conversation robot base on Tencent's SmartQQ
-website: https://github.com/pandolia/qqbot/
-author: pandolia@yeah.net
 """
 
 QQBotVersion = "QQBot-v1.8.2"
