@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 QQBot -- A conversation robot base on Tencent's SmartQQ
+website: https://github.com/pandolia/qqbot/
+author: pandolia@yeah.net
 """
+
 QQBotVersion = "QQBot-v1.8.2"
 
 import json, os, logging, pickle, sys, time, random, platform, subprocess
@@ -239,7 +242,7 @@ class QQBot:
             self.buddies[uin] = [qq, name]
         QLogger(str(self.buddies))
         QLogger('获取朋友列表成功，共 %d 个朋友' % len(self.buddies))
-        with open('./friends_{}'.format(self.qqNum), 'wb+') as fp:
+        with open('./friends_{}'.format(self.qqNum), 'wb') as fp:
             pickle.dump(self.buddies, fp)
 
     def fetchGroups(self, tag=0):
@@ -259,7 +262,7 @@ class QQBot:
         self.groups = {i['gid']: i['name'] for i in res}
         self.groupStr = '群列表:\n' + str(self.groups)
         QLogger('获取群列表成功，共 %d 个群' % len(self.groups))
-        with open('./group_{}'.format(self.qqNum), 'wb+') as fp:
+        with open('./group_{}'.format(self.qqNum), 'wb') as fp:
                 pickle.dump(self.groups, fp)
 
     def fetchDiscusses(self):
@@ -328,7 +331,7 @@ class QQBot:
                 except KeyError as error:
                     self.fetchBuddies(tag=1)
                     name =self.buddies[from_uin]
-                QLogger('来自 %s(%s) 的消息: "%s %s"' % (name[1], name[0], msg, msgface))
+                QLogger('来自 %s(%s) 的消息: "%s%s"' % (name[1], name[0], msg, msgface))
             else:
                 try:
                     QLogger('来自群: %s (%d) 的消息: %s %s' % (self.groups[pollResult[1]], pollResult[2], pollResult[3], msgface))
