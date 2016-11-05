@@ -2,10 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 QQBot -- A conversation robot base on Tencent's SmartQQ
-website: https://github.com/pandolia/qqbot/
-author: pandolia@yeah.net
 """
-
 QQBotVersion = "QQBot-v1.8.2"
 
 import json, os, logging, pickle, sys, time, random, platform, subprocess
@@ -38,16 +35,17 @@ else:
 
 def QLogger(msg):
     try:
-        print(str(msg).encode('gbk').decode('gbk','ignore'))
+        print(str(msg).encode('gbk','ignore').decode('gbk','ignore'))
     except UnicodeEncodeError as error:
-        pass
+        print(error)
 
 class RequestError(Exception):
     pass
 
 class QQBot:
     def Login(self):
-        if not os.path.exists('log.log'):
+        picklePath = './{}.pickle'.format('session')
+        if not os.path.exists(picklePath):
             QLogger('登录方式：手动登录')
             self.manualLogin()
         else:
@@ -72,7 +70,8 @@ class QQBot:
         self.testLogin()
         self.fetchBuddies()
         self.fetchGroups()
-        self.fetchDiscusses()
+        #self.fetchDiscusses()
+        #关闭讨论组列表
         self.dumpSessionInfo()
 
     def autoLogin(self):
@@ -80,7 +79,7 @@ class QQBot:
         self.testLogin()
 
     def dumpSessionInfo(self):
-        picklePath = os.path.join('log.log')
+        picklePath = './{}.pickle'.format('session')
         try:
             with open(picklePath, 'wb') as f:
                 pickle.dump(self.__dict__, f)
@@ -92,10 +91,12 @@ class QQBot:
         self.pollSession = pickle.loads(pickle.dumps(self.session))
 
     def loadSessionInfo(self):
-        picklePath = 'log.log'
-        with open(picklePath, 'rb') as f:
-            self.__dict__ = pickle.load(f)
-            QLogger('成功从文件恢复登录')
+        picklePath = './{}.pickle'.format('session')
+        if os.path.exists(picklePath):
+            QLogger("从文件恢复登录")
+            with open(picklePath, 'rb') as f:
+                self.__dict__ = pickle.load(f)
+                QLogger('成功从文件恢复登录')
         self.pollSession = pickle.loads(pickle.dumps(self.session))
 
     def prepareLogin(self):
@@ -213,8 +214,13 @@ class QQBot:
             repeatOnDeny = 0
         )
 
-    def fetchBuddies(self):
+    def fetchBuddies(self, tag=0):
         QLogger('获取好友列表')
+        QLogger('从文件获取')
+        if os.path.exists('./friends_{}'.format(self.qqNum)) and tag==0:
+            with open('./friends_{}'.format(self.qqNum), 'rb') as fp:
+                self.buddies = pickle.load(fp)
+                return None
         result = self.smartRequest(
             url = 'http://s.web2.qq.com/api/get_user_friends2',
             data = {'r': json.dumps({"vfwebqq":self.vfwebqq, "hash":self.hash})},
@@ -233,9 +239,16 @@ class QQBot:
             self.buddies[uin] = [qq, name]
         QLogger(str(self.buddies))
         QLogger('获取朋友列表成功，共 %d 个朋友' % len(self.buddies))
+        with open('./friends_{}'.format(self.qqNum), 'wb+') as fp:
+            pickle.dump(self.buddies, fp)
 
-    def fetchGroups(self):
+    def fetchGroups(self, tag=0):
         QLogger('获取群列表')
+        if os.path.exists('./group_{}'.format(self.qqNum)) and tag==0:
+            QLogger('从文件获取')
+            with open('./group_{}'.format(self.qqNum), 'rb') as fp:
+                self.groups = pickle.load(fp)
+                return None
         result = self.smartRequest(
             url = 'http://s.web2.qq.com/api/get_group_name_list_mask2',
             data = {'r': json.dumps({"vfwebqq":self.vfwebqq, "hash":self.hash})},
@@ -246,6 +259,8 @@ class QQBot:
         self.groups = {i['gid']: i['name'] for i in res}
         self.groupStr = '群列表:\n' + str(self.groups)
         QLogger('获取群列表成功，共 %d 个群' % len(self.groups))
+        with open('./group_{}'.format(self.qqNum), 'wb+') as fp:
+                pickle.dump(self.groups, fp)
 
     def fetchDiscusses(self):
         QLogger('获取讨论组列表')
@@ -306,16 +321,22 @@ class QQBot:
             except :
                 face=0
             pollResult = msgType, from_uin, buddy_uin, msg, face
+            msgface = str(face) if face else ""
             if msgType == 'buddy':
                 try:
                     name =self.buddies[from_uin]
                 except KeyError as error:
-                    name = "未知qq"
-                print('来自 %s(%s) 的消息: "%s"' % (name[1], name[0], msg))
+                    self.fetchBuddies(tag=1)
+                    name =self.buddies[from_uin]
+                QLogger('来自 %s(%s) 的消息: "%s %s"' % (name[1], name[0], msg, msgface))
             else:
-                print('来自群: %s (%d) 的消息: %s ' % (self.groups[pollResult[1]], pollResult[2], pollResult[3]))
+                try:
+                    QLogger('来自群: %s (%d) 的消息: %s %s' % (self.groups[pollResult[1]], pollResult[2], pollResult[3], msgface))
+                except KeyError as error:
+                    self.fetchGroups(tag=1)
+                    QLogger('来自群: %s (%d) 的消息: %s %s' % (self.groups[pollResult[1]], pollResult[2], pollResult[3], msgface))
+
                 if not self.groups[pollResult[1]] in config.groups:
-                    print('不在qq')
                     return None
         return pollResult
     
@@ -385,7 +406,7 @@ class QQBot:
 
             # 出现网络错误可以多试几次；若网络没问题，但 retcode 有误，一般连续 3 次都出错就没必要再试了
             if i <= 5 and j <= repeatOnDeny:
-                QLogger(errMsg + '！等待重试。')
+                #QLogger("网络请求出错" + '！等待重试。')
                 time.sleep(3)
             else:
                 QLogger(errMsg + '！停止重试')
@@ -439,14 +460,19 @@ class QQBot:
             msg = getMsg(message)
             self.send(msgType, from_uin, msg, face)
         try:
-            name =self.buddies[from_uin]
+            if msgType == 'buddy':
+                name =self.buddies[from_uin]
+                QLogger(('向{}({}) 回复消息({})成功'.format(name[1], name[0], msg)))
+            else:
+                name =self.groups[from_uin]
+                QLogger('向{} 回复消息({})成功'.format(name, msg))
         except IndexError as error:
-            return
+            print(error)
         except TypeError as error:
-            return
+            print(error)
         except KeyError as error:
-            return
-        print('向%s(%s) 回复消息(%s)成功' % (name[1], name[0], msg))
+            print(error)
+        
 
 def qHash(x, K):
     N = [0] * 4
