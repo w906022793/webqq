@@ -1,11 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""
-QQBot -- A conversation robot base on Tencent's SmartQQ
-"""
 
 QQBotVersion = "QQBot-v1.8.2"
-
+import unicodedata
 import json, os, logging, pickle, sys, time, random, platform, subprocess
 import requests, queue, threading
 import config
@@ -47,20 +44,20 @@ class QQBot:
     def Login(self):
         picklePath = './{}.pickle'.format('session')
         if not os.path.exists(picklePath):
-            QLogger('登录方式：手动登录')
+            QLogger('登录方式：扫码登录')
             self.manualLogin()
         else:
             try:
-                QLogger('登录方式：自动登录')
+                QLogger('登录方式：缓存登录')
                 self.autoLogin()
             except Exception as e:
                 if not isinstance(e, RequestError):
                     QLogger('', exc_info=True)
-                QLogger('自动登录失败，改用手动登录')
+                QLogger('缓存登录失败，改用手动登录')
                 self.manualLogin()
 
         QLogger('登录成功。登录账号：%s (%d)' % (self.nick, self.qqNum))
-
+        #self.refetch()
     def manualLogin(self):
         self.prepareLogin()
         self.getQrcode()
@@ -71,14 +68,13 @@ class QQBot:
         self.testLogin()
         self.fetchBuddies()
         self.fetchGroups()
-        #self.fetchDiscusses()
-        #关闭讨论组列表
+        self.getGroupsInfo()
         self.dumpSessionInfo()
 
     def autoLogin(self):
         self.loadSessionInfo()
         self.testLogin()
-
+        self.refetch()
     def dumpSessionInfo(self):
         picklePath = './{}.pickle'.format('session')
         try:
@@ -94,12 +90,11 @@ class QQBot:
     def loadSessionInfo(self):
         picklePath = './{}.pickle'.format('session')
         if os.path.exists(picklePath):
-            QLogger("从文件恢复登录")
+            QLogger("从缓存恢复登录")
             with open(picklePath, 'rb') as f:
                 self.__dict__ = pickle.load(f)
-                QLogger('成功从文件恢复登录')
         self.pollSession = pickle.loads(pickle.dumps(self.session))
-
+        
     def prepareLogin(self):
         self.clientid = 53999199
         self.msgId = 6000000
@@ -150,14 +145,15 @@ class QQBot:
         while True:
             time.sleep(3)
             authStatus = self.getAuthStatus()
+            
             if '二维码未失效' in authStatus:
-                QLogger('二维码未失效,等待扫描')
+                print('二维码未失效,等待扫描',end='\r')
             elif '二维码认证中' in authStatus:
                 # "ptuiCB('67','0','','0','二维码认证中。(1006641921)', '');\r\n"
-                QLogger('二维码已扫描，等待授权')
+                print('二维码已扫描，等待授权', end='\r')
             elif '二维码已失效' in authStatus:
                 # "ptuiCB('65','0','','0','二维码已失效。(4171256442)', '');\r\n"
-                QLogger('二维码已失效, 重新获取二维码')
+                print('二维码已失效, 重新获取二维码', end='\r')
                 self.getQrcode()
             elif '登录成功' in authStatus:
                 # ptuiCB('0','0','http://ptlogin4.web2.qq.com/check_sig?...','0','登录成功！', 'nickname');\r\n"
@@ -174,7 +170,7 @@ class QQBot:
                 break
             else:
                 raise Exception('获取二维码扫描状态时出错, html="%s"' % authStatus)
-    
+            status = authStatus
     def getPtwebqq(self):
         QLogger('获取ptwebqq')
         self.urlGet(self.urlPtwebqq)
@@ -217,78 +213,75 @@ class QQBot:
 
     def fetchBuddies(self, tag=0):
         QLogger('获取好友列表')
-        QLogger('从文件获取')
         if os.path.exists('./friends_{}'.format(self.qqNum)) and tag==0:
             with open('./friends_{}'.format(self.qqNum), 'rb') as fp:
                 self.buddies = pickle.load(fp)
-                return None
-        result = self.smartRequest(
+        else:
+            result = self.smartRequest(
             url = 'http://s.web2.qq.com/api/get_user_friends2',
             data = {'r': json.dumps({"vfwebqq":self.vfwebqq, "hash":self.hash})},
             Referer = 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
-        )
-        self.buddies = {}
+            )
+            self.buddies = {}
 
-        for info in result['info']:
-            uin = info['uin']
-            name = info['nick']
-            qq = self.smartRequest(
-                url = 'http://s.web2.qq.com/api/get_friend_uin2?tuin=%d&type=1&vfwebqq=%s&t=0.1' % \
+            for info in result['info']:
+                uin = info['uin']
+                name = info['nick']
+                qq = self.smartRequest(
+                    url = 'http://s.web2.qq.com/api/get_friend_uin2?tuin=%d&type=1&vfwebqq=%s&t=0.1' % \
                       (uin, self.vfwebqq),
-                Referer = 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
-            )['account']
-            self.buddies[uin] = [qq, name]
-        QLogger(str(self.buddies))
+                    Referer = 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
+                    )['account']
+                self.buddies[uin] = [qq, name]
+            with open('./friends_{}'.format(self.qqNum), 'wb') as fp:
+                pickle.dump(self.buddies, fp)
         QLogger('获取朋友列表成功，共 %d 个朋友' % len(self.buddies))
-        with open('./friends_{}'.format(self.qqNum), 'wb') as fp:
-            pickle.dump(self.buddies, fp)
 
     def fetchGroups(self, tag=0):
         QLogger('获取群列表')
-        if os.path.exists('./group_{}'.format(self.qqNum)) and tag==0:
-            QLogger('从文件获取')
+        if os.path.exists('group_{}'.format(self.qqNum)) and tag==0:
             with open('./group_{}'.format(self.qqNum), 'rb') as fp:
                 self.groups = pickle.load(fp)
-                return None
-        result = self.smartRequest(
+        else:
+            result = self.smartRequest(
             url = 'http://s.web2.qq.com/api/get_group_name_list_mask2',
             data = {'r': json.dumps({"vfwebqq":self.vfwebqq, "hash":self.hash})},
             Referer = 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
         )
-        ss, self.groups, self.groupsDictU, self.groupsDictQ = [], [], {}, {}
-        res = result['gnamelist']
-        self.groups = {i['gid']: i['name'] for i in res}
-        self.groupStr = '群列表:\n' + str(self.groups)
-        QLogger('获取群列表成功，共 %d 个群' % len(self.groups))
-        with open('./group_{}'.format(self.qqNum), 'wb') as fp:
+            ss, self.groups, self.groupsDictU, self.groupsDictQ = [], [], {}, {}
+            res = result['gnamelist']
+            self.groups = {i['gid']: [i['name'], i['code']] for i in res}
+            with open('./group_{}'.format(self.qqNum), 'wb') as fp:
                 pickle.dump(self.groups, fp)
-
-    def fetchDiscusses(self):
-        QLogger('获取讨论组列表')
-        result = self.smartRequest(
-            url = 'http://s.web2.qq.com/api/get_discus_list?clientid=%s&psessionid=%s&vfwebqq=%s&t=%s' % \
-                  (self.clientid, self.psessionid, self.vfwebqq, repr(random.random())),
-            Referer = 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2'
-        )
-        ss, self.discusses, self.discussesDict = [], [], {}
-        for info in result['dnamelist']:
-            uin = info['did']
-            name = info['name']
-            discuss = dict(uin=uin, name=name)
-            self.discusses.append(discuss)
-            self.discussesDict[uin] = discuss
-            s = '%s, uin%d' % (name, uin)
-            ss.append(s)
-            QLogger('讨论组： ' + s)
-        self.discussStr = '讨论组列表:\n' + '\n'.join(ss)
-        QLogger('获取讨论组，共 %d 个' % len(self.discusses))
-    
+        QLogger('获取群列表成功，共 %d 个群' % len(self.groups))
     def refetch(self):
         self.fetchBuddies()
         self.fetchGroups()
-        #self.fetchDiscusses()
+        self.getGroupsInfo()
         self.nick = self.fetchBuddyDetailInfo(self.uin)['nick']
-    
+
+    def getGroupsInfo(self,tag=0):
+        QLogger('获取群好友信息')
+        if os.path.exists('./groupsInfo_{}'.format(self.qqNum)) and tag==0:
+            with open('./groupsInfo_{}'.format(self.qqNum), 'rb') as fp:
+                self.groupsInfo = pickle.load(fp)
+        else:
+            self.groupsInfo = {}
+            for key, value in self.groups.items():
+                res = self.smartRequest(
+                    url = ('http://s.web2.qq.com/api/get_group_info_ext2?gcode={0}'\
+                  '&vfwebqq={1}'\
+                  '&t=1479035956421').format(value[1], self.vfwebqq),
+                Referer = 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1'
+                )
+                try:
+                    self.groupsInfo[key] = {r['muin']: r['card'] for r in res['cards']}
+                except KeyError as e:
+                    #群里只有自己qq和自己关联的qq json信息格式改变
+                    continue
+            with open('./groupsInfo_{}'.format(self.qqNum), 'wb') as fp:
+                pickle.dump(self.groupsInfo, fp)
+        QLogger('共获取%s个群的成员信息'%len(self.groupsInfo))
     def fetchBuddyDetailInfo(self, uin):
         return self.smartRequest(
             url = 'http://s.web2.qq.com/api/get_friend_info2?tuin={uin}'.format(uin=uin) + \
@@ -322,23 +315,28 @@ class QQBot:
             except :
                 face=0
             pollResult = msgType, from_uin, buddy_uin, msg, face
+
             msgface = str(face) if face else ""
             if msgType == 'buddy':
                 try:
                     name =self.buddies[from_uin]
                 except KeyError as error:
                     self.fetchBuddies(tag=1)
-                    name =self.buddies[from_uin]
+                    name = self.buddies[from_uin][0]
                 QLogger('来自 %s(%s) 的消息: "%s%s"' % (name[1], name[0], msg, msgface))
-            else:
+            elif msgType == 'group':
                 try:
-                    QLogger('来自群: %s (%d) 的消息: %s %s' % (self.groups[pollResult[1]], pollResult[2], pollResult[3], msgface))
-                except KeyError as error:
-                    self.fetchGroups(tag=1)
-                    QLogger('来自群: %s (%d) 的消息: %s %s' % (self.groups[pollResult[1]], pollResult[2], pollResult[3], msgface))
+                    groupFriendName = self.groupsInfo[pollResult[1]][pollResult[2]]
+                except Exception as error:
+                    #print('Error:',error)
+                    groupFriendName = pollResult[2]
+                QLogger('来自群: %s (%s) 的消息: %s %s' % (self.groups[pollResult[1]][0], groupFriendName, pollResult[3], msgface))
 
-                if not self.groups[pollResult[1]] in config.groups:
+                if not self.groups[pollResult[1]][0] in config.groups:
                     return None
+            else:
+                QLogger('%s'%str(pollResult) )
+                
         return pollResult
     
     def send(self, msgType, to_uin, msg, face):
@@ -392,7 +390,7 @@ class QQBot:
                     html = session.get(url).text
                 else:
                     html = session.post(url, data=data).text
-                result = json.loads(html)
+                result = json.loads(unicodedata.normalize('NFKD', html))
             except (requests.ConnectionError, ValueError):
                 i += 1
                 errorInfo = '网络错误或url地址错误'
@@ -402,8 +400,8 @@ class QQBot:
                     return result.get('result', result)
                 else:
                     j += 1
-                    errorInfo = '请求被拒绝错误'
-            errMsg = '第%d次请求“%s”时出现“%s”，html=%s' % (i+j, url, errorInfo, html)
+                    errorInfo = '请求被拒绝'
+            errMsg = '“%s” -> “%s”' % (errorInfo, html)
 
             # 出现网络错误可以多试几次；若网络没问题，但 retcode 有误，一般连续 3 次都出错就没必要再试了
             if i <= 5 and j <= repeatOnDeny:
@@ -416,7 +414,6 @@ class QQBot:
     def Run(self):
         self.msgQueue = queue.Queue()
         self.stopped = False
-
         pullThread = threading.Thread(target=self.pullForever)
         pullThread.setDaemon(True)
         pullThread.start()
